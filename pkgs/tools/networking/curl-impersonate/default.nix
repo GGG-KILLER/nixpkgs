@@ -1,70 +1,64 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, fetchpatch
-, callPackage
-, buildGoModule
-, installShellFiles
-, symlinkJoin
-, buildPackages
-, zlib
-, sqlite
-, cmake
-, python3
-, ninja
-, perl
-, autoconf
-, automake
-, libtool
-, cctools
-, cacert
-, unzip
-, go
-, p11-kit
-, nixosTests
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  callPackage,
+  buildGoModule,
+  installShellFiles,
+  buildPackages,
+  zlib,
+  zstd,
+  sqlite,
+  cmake,
+  python3,
+  ninja,
+  perl,
+  autoconf,
+  automake,
+  libtool,
+  cctools,
+  cacert,
+  unzip,
+  go,
+  p11-kit,
+  nixosTests,
 }:
+stdenv.mkDerivation rec {
+  pname = "curl-impersonate";
+  version = "0.7.0";
 
-let
-  makeCurlImpersonate = { name, target }: stdenv.mkDerivation rec {
-    pname = "curl-impersonate-${name}";
-    version = "0.6.1";
+  outputs = [
+    "out"
+    "dev"
+  ];
 
-    outputs = [ "out" "dev" ];
+  src = fetchFromGitHub {
+    owner = "yifeikong";
+    repo = "curl-impersonate";
+    rev = "v${version}";
+    hash = "sha256-nxANiNgrbbp7F6k2y1HGGWGOUBRwc3tK8WcNIqEBLz4=";
+  };
 
-    src = fetchFromGitHub {
-      owner = "lwthiker";
-      repo = "curl-impersonate";
-      rev = "v${version}";
-      hash = "sha256-ExmEhjJC8FPzx08RuKOhRxKgJ4Dh+ElEl+OUHzRCzZc=";
-    };
+  patches = [
+    ./disable-building-docs.patch
+  ];
 
-    patches = [
-      # Fix shebangs and commands in the NSS build scripts
-      # (can't just patchShebangs or substituteInPlace since makefile unpacks it)
-      ./curl-impersonate-0.6.1-fix-command-paths.patch
+  # Disable blanket -Werror to fix build on `gcc-13` related to minor
+  # warnings on `boringssl`.
+  env.NIX_CFLAGS_COMPILE = "-Wno-error";
 
-      # SOCKS5 heap buffer overflow - https://curl.se/docs/CVE-2023-38545.html
-      (fetchpatch {
-        name = "curl-impersonate-patch-cve-2023-38545.patch";
-        url = "https://github.com/lwthiker/curl-impersonate/commit/e7b90a0d9c61b6954aca27d346750240e8b6644e.diff";
-        hash = "sha256-jFrz4Q+MJGfNmwwzHhThado4c9hTd/+b/bfRsr3FW5k=";
-      })
-    ];
+  strictDeps = true;
 
-    # Disable blanket -Werror to fix build on `gcc-13` related to minor
-    # warnings on `boringssl`.
-    env.NIX_CFLAGS_COMPILE = "-Wno-error";
+  depsBuildBuild = lib.optionals (stdenv.buildPlatform != stdenv.hostPlatform) [
+    buildPackages.stdenv.cc
+  ];
 
-    strictDeps = true;
-
-    depsBuildBuild = lib.optionals (stdenv.buildPlatform != stdenv.hostPlatform) [
-      buildPackages.stdenv.cc
-    ];
-
-    nativeBuildInputs = lib.optionals stdenv.isDarwin [
+  nativeBuildInputs =
+    lib.optionals stdenv.isDarwin [
       # Must come first so that it shadows the 'libtool' command but leaves 'libtoolize'
       cctools
-    ] ++ [
+    ]
+    ++ [
       installShellFiles
       cmake
       python3
@@ -78,127 +72,118 @@ let
       go
     ];
 
-    buildInputs = [
-      zlib
-      sqlite
-    ];
+  buildInputs = [
+    zlib
+    zstd
+    sqlite
+  ];
 
-    configureFlags = [
-      "--with-ca-bundle=${if stdenv.isDarwin then "/etc/ssl/cert.pem" else "/etc/ssl/certs/ca-certificates.crt"}"
-      "--with-ca-path=${cacert}/etc/ssl/certs"
-    ];
+  configureFlags = [
+    "--with-ca-bundle=${
+      if stdenv.isDarwin
+      then "/etc/ssl/cert.pem"
+      else "/etc/ssl/certs/ca-certificates.crt"
+    }"
+    "--with-ca-path=${cacert}/etc/ssl/certs"
+  ];
 
-    buildFlags = [ "${target}-build" ];
-    checkTarget = "${target}-checkbuild";
-    installTargets = [ "${target}-install" ];
+  buildFlags = ["chrome-build"];
+  checkTarget = "chrome-checkbuild";
+  installTargets = ["chrome-install"];
 
-    doCheck = true;
+  doCheck = true;
 
-    dontUseCmakeConfigure = true;
-    dontUseNinjaBuild = true;
-    dontUseNinjaInstall = true;
-    dontUseNinjaCheck = true;
+  dontUseCmakeConfigure = true;
+  dontUseNinjaBuild = true;
+  dontUseNinjaInstall = true;
+  dontUseNinjaCheck = true;
 
-    postUnpack = lib.concatStringsSep "\n" (lib.mapAttrsToList (name: dep: "ln -sT ${dep.outPath} source/${name}") (lib.filterAttrs (n: v: v ? outPath) passthru.deps));
+  postUnpack = lib.concatStringsSep "\n" (lib.mapAttrsToList (name: dep: "ln -sT ${dep.outPath} source/${name}") (lib.filterAttrs (n: v: v ? outPath) passthru.deps));
 
-    preConfigure = ''
-      export GOCACHE=$TMPDIR/go-cache
-      export GOPATH=$TMPDIR/go
-      export GOPROXY=file://${passthru.boringssl-go-modules}
-      export GOSUMDB=off
+  preConfigure = ''
+    export GOCACHE=$TMPDIR/go-cache
+    export GOPATH=$TMPDIR/go
+    export GOPROXY=file://${passthru.boringssl-go-modules}
+    export GOSUMDB=off
 
-      # Need to get value of $out for this flag
-      configureFlagsArray+=("--with-libnssckbi=$out/lib")
-    '';
+    # Need to get value of $out for this flag
+    configureFlagsArray+=("--with-libnssckbi=$out/lib")
+  '';
 
-    postInstall = ''
+  postInstall =
+    ''
       # Remove vestigial *-config script
-      rm $out/bin/curl-impersonate-${name}-config
+      rm $out/bin/curl-impersonate-chrome-config
 
       # Patch all shebangs of installed scripts
       patchShebangs $out/bin
 
       # Install headers
       make -C curl-*/include install
-    '' + lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
+    ''
+    + lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
       # Build and install completions for each curl binary
 
       # Patch in correct binary name and alias it to all scripts
-      perl curl-*/scripts/completion.pl --curl $out/bin/curl-impersonate-${name} --shell zsh >$TMPDIR/curl-impersonate-${name}.zsh
-      substituteInPlace $TMPDIR/curl-impersonate-${name}.zsh \
+      perl curl-*/scripts/completion.pl --curl $out/bin/curl-impersonate-chrome --shell zsh >$TMPDIR/curl-impersonate-chrome.zsh
+      substituteInPlace $TMPDIR/curl-impersonate-chrome.zsh \
         --replace-fail \
           '#compdef curl' \
-          "#compdef curl-impersonate-${name}$(find $out/bin -name 'curl_*' -printf ' %f=curl-impersonate-${name}')"
+          "#compdef curl-impersonate-chrome$(find $out/bin -name 'curl_*' -printf ' %f=curl-impersonate-chrome')"
 
-      perl curl-*/scripts/completion.pl --curl $out/bin/curl-impersonate-${name} --shell fish >$TMPDIR/curl-impersonate-${name}.fish
-      substituteInPlace $TMPDIR/curl-impersonate-${name}.fish \
+      perl curl-*/scripts/completion.pl --curl $out/bin/curl-impersonate-chrome --shell fish >$TMPDIR/curl-impersonate-chrome.fish
+      substituteInPlace $TMPDIR/curl-impersonate-chrome.fish \
         --replace-fail \
           '--command curl' \
-          "--command curl-impersonate-${name}$(find $out/bin -name 'curl_*' -printf ' --command %f')"
+          "--command curl-impersonate-chrome$(find $out/bin -name 'curl_*' -printf ' --command %f')"
 
       # Install zsh and fish completions
-      installShellCompletion $TMPDIR/curl-impersonate-${name}.{zsh,fish}
+      installShellCompletion $TMPDIR/curl-impersonate-chrome.{zsh,fish}
     '';
 
-    preFixup = let
-      libext = stdenv.hostPlatform.extensions.sharedLibrary;
-    in ''
-      # If libnssckbi.so is needed, link libnssckbi.so without needing nss in closure
-      if grep -F nssckbi $out/lib/libcurl-impersonate-*${libext} &>/dev/null; then
-        ln -s ${p11-kit}/lib/pkcs11/p11-kit-trust${libext} $out/lib/libnssckbi${libext}
-        ${lib.optionalString stdenv.hostPlatform.isElf ''
-          patchelf --add-needed libnssckbi${libext} $out/lib/libcurl-impersonate-*${libext}
-        ''}
-      fi
-    '';
+  preFixup = let
+    libext = stdenv.hostPlatform.extensions.sharedLibrary;
+  in ''
+    # If libnssckbi.so is needed, link libnssckbi.so without needing nss in closure
+    if grep -F nssckbi $out/lib/libcurl-impersonate-*${libext} &>/dev/null; then
+      ln -s ${p11-kit}/lib/pkcs11/p11-kit-trust${libext} $out/lib/libnssckbi${libext}
+      ${lib.optionalString stdenv.hostPlatform.isElf ''
+      patchelf --add-needed libnssckbi${libext} $out/lib/libcurl-impersonate-*${libext}
+    ''}
+    fi
+  '';
 
-    disallowedReferences = [ go ];
-
-    passthru = {
-      deps = callPackage ./deps.nix {};
-
-      boringssl-go-modules = (buildGoModule {
-        inherit (passthru.deps."boringssl.zip") name;
-
-        src = passthru.deps."boringssl.zip";
-        vendorHash = "sha256-SNUsBiKOGWmkRdTVABVrlbLAVMfu0Q9IgDe+kFC5vXs=";
-
-        nativeBuildInputs = [ unzip ];
-
-        proxyVendor = true;
-      }).goModules;
-    };
-
-    meta = with lib; {
-      description = "Special build of curl that can impersonate Chrome & Firefox";
-      homepage = "https://github.com/lwthiker/curl-impersonate";
-      license = with licenses; [ curl mit ];
-      maintainers = with maintainers; [ deliciouslytyped ];
-      platforms = platforms.unix;
-      mainProgram = "curl-impersonate-${name}";
-    };
-  };
-in
-
-symlinkJoin rec {
-  pname = "curl-impersonate";
-  inherit (passthru.curl-impersonate-chrome) version meta;
-
-  name = "${pname}-${version}";
-
-  paths = [
-    passthru.curl-impersonate-ff
-    passthru.curl-impersonate-chrome
-  ];
+  disallowedReferences = [go];
 
   passthru = {
-    curl-impersonate-ff = makeCurlImpersonate { name = "ff"; target = "firefox"; };
-    curl-impersonate-chrome = makeCurlImpersonate { name = "chrome"; target = "chrome"; };
+    deps = callPackage ./deps.nix {};
 
     updateScript = ./update.sh;
 
-    inherit (passthru.curl-impersonate-chrome) src;
+    tests = {
+      inherit (nixosTests) curl-impersonate;
+    };
 
-    tests = { inherit (nixosTests) curl-impersonate; };
+    boringssl-go-modules =
+      (buildGoModule {
+        inherit (passthru.deps."boringssl.zip") name;
+
+        src = passthru.deps."boringssl.zip";
+        vendorHash = "sha256-oKlwh+Oup3lVgqgq42vY3iLg62VboF9N565yK2W0XxI=";
+
+        nativeBuildInputs = [unzip];
+
+        proxyVendor = true;
+      })
+      .goModules;
+  };
+
+  meta = {
+    description = "Special build of curl that can impersonate Chrome & Firefox";
+    homepage = "https://github.com/yifeikong/curl-impersonate";
+    license = with lib.licenses; [curl mit];
+    maintainers = with lib.maintainers; [deliciouslytyped];
+    platforms = lib.platforms.unix;
+    mainProgram = "curl-impersonate-chrome";
   };
 }
