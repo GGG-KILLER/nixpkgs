@@ -99,7 +99,7 @@ The `dotnetCorePackages.sdk` contains both a runtime and the full sdk of a given
 To package Dotnet applications, you can use `buildDotnetModule`. This has similar arguments to `stdenv.mkDerivation`, with the following additions:
 
 * `projectFile` is used for specifying the dotnet project file, relative to the source root. These have `.sln` (entire solution) or `.csproj` (single project) file extensions. This can be a list of multiple projects as well. When omitted, will attempt to find and build the solution (`.sln`). If running into problems, make sure to set it to a file (or a list of files) with the `.csproj` extension - building applications as entire solutions is not fully supported by the .NET CLI.
-* `nugetDeps` takes either a path to a `deps.nix` file, or a derivation. The `deps.nix` file can be generated using the script attached to `passthru.fetch-deps`. For compatibility, if the argument is a list of derivations, they will be added to `buildInputs`.
+* `nugetDeps` takes a file path (to a JSON file, or, previously, a nix file), a derivation, a list of derivations, or a list of `fetchNupkg` arguments. A `deps.json` file can be generated using the script attached to `passthru.fetch-deps`, which is the preferred usage. All `nugetDeps` packages will be added to `buildInputs`.
 ::: {.note}
 For more detail about managing the `deps.nix` file, see [Generating and updating NuGet dependencies](#generating-and-updating-nuget-dependencies)
 :::
@@ -133,7 +133,7 @@ For more detail about managing the `deps.nix` file, see [Generating and updating
 * `dotnetPackFlags` can be used to pass flags to `dotnet pack`. Used only if `packNupkg` is set to `true`.
 * `dotnetFlags` can be used to pass flags to all of the above phases.
 
-When packaging a new application, you need to fetch its dependencies. Create an empty `deps.nix`, set `nugetDeps = ./deps.nix`, then run `nix-build -A package.fetch-deps` to generate a script that will build the lockfile for you.
+When packaging a new application, you need to fetch its dependencies. Create an empty `deps.json`, set `nugetDeps = ./deps.json`, then run `nix-build -A package.fetch-deps` to generate a script that will build the lockfile for you.
 
 Here is an example `default.nix`, using some of the previously discussed arguments:
 ```nix
@@ -225,7 +225,7 @@ buildDotnetGlobalTool {
 ## Generating and updating NuGet dependencies {#generating-and-updating-nuget-dependencies}
 
 When writing a new expression, you can use the generated `fetch-deps` script to initialise the lockfile.
-After setting `nugetDeps` to the desired location of the lockfile (e.g. `./deps.nix`),
+After setting `nugetDeps` to the desired location of the lockfile (e.g. `./deps.json`),
 build the script with `nix-build -A package.fetch-deps` and then run the result.
 (When the root attr is your package, it's simply `nix-build -A fetch-deps`.)
 
@@ -236,31 +236,203 @@ the upstream repository and you are inside it.
 ```bash
 $ dotnet restore --packages out
   Determining projects to restore...
-  Restored /home/lychee/Celeste64/Celeste64.csproj (in 1.21 sec).
+  Restored /home/ggg/git-credential-manager/src/shared/Git-Credential-Manager/Git-Credential-Manager.csproj (in 1.21 sec).
 ```
 
-Next, use `nuget-to-nix` tool provided in nixpkgs to generate a lockfile to `deps.nix` from
+Next, use `nuget-to-json` tool provided in nixpkgs to generate a lockfile to `deps.json` from
 the packages inside the `out` directory.
 
 ```bash
-$ nuget-to-nix out > deps.nix
+$ nuget-to-json out > deps.nix
 ```
-Which `nuget-to-nix` will generate an output similar to below
-```nix
-{ fetchNuGet }: [
-  (fetchNuGet { pname = "FosterFramework"; version = "0.1.15-alpha"; hash = "sha256-lM6eYgOGjl1fx6WFD7rnRi/YAQieM0mx60h0p5dr+l8="; })
-  (fetchNuGet { pname = "Microsoft.AspNetCore.App.Runtime.linux-x64"; version = "8.0.1"; hash = "sha256-QbUQXjCzr8j8u/5X0af9jE++EugdoxMhT08F49MZX74="; })
-  (fetchNuGet { pname = "Microsoft.NET.ILLink.Tasks"; version = "8.0.1"; hash = "sha256-SopZpGaZ48/8dpUwDFDM3ix+g1rP4Yqs1PGuzRp+K7c="; })
-  (fetchNuGet { pname = "Microsoft.NETCore.App.Runtime.linux-x64"; version = "8.0.1"; hash = "sha256-jajBI5GqG2IIcsIMgxTHfXbMapoXrZGl/EEhShwYq7w="; })
-  (fetchNuGet { pname = "SharpGLTF.Core"; version = "1.0.0-alpha0031"; hash = "sha256-Bs4baD5wNIH6wAbGK4Xaem0i3luQkOQs37izBWdFx1I="; })
-  (fetchNuGet { pname = "SharpGLTF.Runtime"; version = "1.0.0-alpha0031"; hash = "sha256-TwJO6b8ubmwBQh6NyHha8+JT5zHDJ4dROBbsEbUaa1M="; })
-  (fetchNuGet { pname = "Sledge.Formats"; version = "1.2.2"; hash = "sha256-0Ddhuwpu3wwIzA4NuPaEVdMkx6tUukh8uKD6nKoxFPg="; })
-  (fetchNuGet { pname = "Sledge.Formats.Map"; version = "1.1.5"; hash = "sha256-hkYJ2iWIz7vhPWlDOw2fvTenlh+4/D/37Z71tCEwnK8="; })
-  (fetchNuGet { pname = "System.Numerics.Vectors"; version = "4.5.0"; hash = "sha256-qdSTIFgf2htPS+YhLGjAGiLN8igCYJnCCo6r78+Q+c8="; })
+Which `nuget-to-json` will generate an output similar to below
+```json
+[
+  {
+    "pname": "Avalonia",
+    "version": "11.1.3",
+    "hash": "sha256-kz+k/vkuWoL0XBvRT8SadMOmmRCFk9W/J4k/IM6oYX0="
+  },
+  {
+    "pname": "Avalonia.Angle.Windows.Natives",
+    "version": "2.1.22045.20230930",
+    "hash": "sha256-RxPcWUT3b/+R3Tu5E5ftpr5ppCLZrhm+OTsi0SwW3pc="
+  },
+  {
+    "pname": "Avalonia.BuildServices",
+    "version": "0.0.29",
+    "hash": "sha256-WPHRMNowRnYSCh88DWNBCltWsLPyOfzXGzBqLYE7tRY="
+  },
+  {
+    "pname": "Avalonia.Controls.ColorPicker",
+    "version": "11.1.3",
+    "hash": "sha256-W17Wvmi8/47cf5gCF3QRcaKLz0ZpXtZYCCkaERkbyXU="
+  },
+  {
+    "pname": "Avalonia.Controls.DataGrid",
+    "version": "11.1.3",
+    "hash": "sha256-OOKTovi5kckn0x/8dMcq56cvq57UVMLzA9LRXDxm2Vc="
+  },
+  {
+    "pname": "Avalonia.Desktop",
+    "version": "11.1.3",
+    "hash": "sha256-mNFscbtyqLlodzGa3SJ3oVY467JjWwY45LxZiKDAn/w="
+  },
+  {
+    "pname": "Avalonia.Diagnostics",
+    "version": "11.1.3",
+    "hash": "sha256-PD9ZIeBZJrLaVDjmWBz4GocrdUSNUou11gAERU+xWDo="
+  },
+  {
+    "pname": "Avalonia.FreeDesktop",
+    "version": "11.1.3",
+    "hash": "sha256-nUBhSRE0Bly3dVC14wXwU19vP3g0VbE4bCUohx7DCVI="
+  },
+  {
+    "pname": "Avalonia.Native",
+    "version": "11.1.3",
+    "hash": "sha256-byAVGW7XgkyzDj1TnqaCeDU/xTD9z8ACGrSJgwJ+XXs="
+  },
+  {
+    "pname": "Avalonia.Remote.Protocol",
+    "version": "11.1.3",
+    "hash": "sha256-CKF+62zCbK1Rd/HiC6MGrags3ylXrVQ1lni3Um0Muqk="
+  },
+  {
+    "pname": "Avalonia.Skia",
+    "version": "11.1.3",
+    "hash": "sha256-EtB86g+nz6i8wL6xytMkYl2Ehgt3GFMMNPzQfhbfopM="
+  },
+  {
+    "pname": "Avalonia.Themes.Fluent",
+    "version": "11.1.3",
+    "hash": "sha256-qfmRK2gLGSgHx4dNIeVesWxLUjcook9ET2xru/Xyiw8="
+  },
+  {
+    "pname": "Avalonia.Themes.Simple",
+    "version": "11.1.3",
+    "hash": "sha256-Q6jL5J/6aBtOY85I641RVp8RpuqJbPy6C6LxnRkFtMM="
+  },
+  {
+    "pname": "Avalonia.Win32",
+    "version": "11.1.3",
+    "hash": "sha256-zcxTpEnpLf50p8Yaiylk5/CS9MNDe7lK1uX1CPaJBUc="
+  },
+  {
+    "pname": "Avalonia.X11",
+    "version": "11.1.3",
+    "hash": "sha256-M2+y661/znDxZRdwNRIQi4mS2m6T4kQkBbYeE7KyQAw="
+  },
+  {
+    "pname": "HarfBuzzSharp",
+    "version": "7.3.0.2",
+    "hash": "sha256-ibgoqzT1NV7Qo5e7X2W6Vt7989TKrkd2M2pu+lhSDg8="
+  },
+  {
+    "pname": "HarfBuzzSharp.NativeAssets.Linux",
+    "version": "7.3.0.2",
+    "hash": "sha256-SSfyuyBaduGobJW+reqyioWHhFWsQ+FXa2Gn7TiWxrU="
+  },
+  {
+    "pname": "HarfBuzzSharp.NativeAssets.macOS",
+    "version": "7.3.0.2",
+    "hash": "sha256-dmEqR9MmpCwK8AuscfC7xUlnKIY7+Nvi06V0u5Jff08="
+  },
+  {
+    "pname": "HarfBuzzSharp.NativeAssets.WebAssembly",
+    "version": "7.3.0.2",
+    "hash": "sha256-aEZr9uKAlCTeeHoYNR1Rs6L3P54765CemyrgJF8x09c="
+  },
+  {
+    "pname": "HarfBuzzSharp.NativeAssets.Win32",
+    "version": "7.3.0.2",
+    "hash": "sha256-x4iM3NHs9VyweG57xA74yd4uLuXly147ooe0mvNQ8zo="
+  },
+  {
+    "pname": "MicroCom.Runtime",
+    "version": "0.11.0",
+    "hash": "sha256-VdwpP5fsclvNqJuppaOvwEwv2ofnAI5ZSz2V+UEdLF0="
+  },
+  {
+    "pname": "Microsoft.Identity.Client",
+    "version": "4.65.0",
+    "hash": "sha256-gkBVLb8acLYexNM4ZzMJ0qfDp2UqjUt0yiu3MfMcWig="
+  },
+  {
+    "pname": "Microsoft.Identity.Client.Extensions.Msal",
+    "version": "4.65.0",
+    "hash": "sha256-Xmy/evicLvmbC+6ytxwVE646uVcJB5yMpEK73H5tzD0="
+  },
+  {
+    "pname": "Microsoft.IdentityModel.Abstractions",
+    "version": "6.35.0",
+    "hash": "sha256-bxyYu6/QgaA4TQYBr5d+bzICL+ktlkdy/tb/1fBu00Q="
+  },
+  {
+    "pname": "SkiaSharp",
+    "version": "2.88.8",
+    "hash": "sha256-rD5gc4SnlRTXwz367uHm8XG5eAIQpZloGqLRGnvNu0A="
+  },
+  {
+    "pname": "SkiaSharp.NativeAssets.Linux",
+    "version": "2.88.8",
+    "hash": "sha256-fOmNbbjuTazIasOvPkd2NPmuQHVCWPnow7AxllRGl7Y="
+  },
+  {
+    "pname": "SkiaSharp.NativeAssets.macOS",
+    "version": "2.88.8",
+    "hash": "sha256-CdcrzQHwCcmOCPtS8EGtwsKsgdljnH41sFytW7N9PmI="
+  },
+  {
+    "pname": "SkiaSharp.NativeAssets.WebAssembly",
+    "version": "2.88.8",
+    "hash": "sha256-GWWsE98f869LiOlqZuXMc9+yuuIhey2LeftGNk3/z3w="
+  },
+  {
+    "pname": "SkiaSharp.NativeAssets.Win32",
+    "version": "2.88.8",
+    "hash": "sha256-b8Vb94rNjwPKSJDQgZ0Xv2dWV7gMVFl5GwTK/QiZPPM="
+  },
+  {
+    "pname": "System.CommandLine",
+    "version": "2.0.0-beta4.22272.1",
+    "hash": "sha256-zSO+CYnMH8deBHDI9DHhCPj79Ce3GOzHCyH1/TiHxcc="
+  },
+  {
+    "pname": "System.Diagnostics.DiagnosticSource",
+    "version": "6.0.1",
+    "hash": "sha256-Xi8wrUjVlioz//TPQjFHqcV/QGhTqnTfUcltsNlcCJ4="
+  },
+  {
+    "pname": "System.IO.Pipelines",
+    "version": "6.0.0",
+    "hash": "sha256-xfjF4UqTMJpf8KsBWUyJlJkzPTOO/H5MW023yTYNQSA="
+  },
+  {
+    "pname": "System.Numerics.Vectors",
+    "version": "4.5.0",
+    "hash": "sha256-qdSTIFgf2htPS+YhLGjAGiLN8igCYJnCCo6r78+Q+c8="
+  },
+  {
+    "pname": "System.Runtime.CompilerServices.Unsafe",
+    "version": "6.0.0",
+    "hash": "sha256-bEG1PnDp7uKYz/OgLOWs3RWwQSVYm+AnPwVmAmcgp2I="
+  },
+  {
+    "pname": "System.Security.Cryptography.ProtectedData",
+    "version": "4.5.0",
+    "hash": "sha256-Z+X1Z2lErLL7Ynt2jFszku6/IgrngO3V1bSfZTBiFIc="
+  },
+  {
+    "pname": "Tmds.DBus.Protocol",
+    "version": "0.16.0",
+    "hash": "sha256-vKYEaa1EszR7alHj48R8G3uYArhI+zh2ZgiBv955E98="
+  }
 ]
+
 ```
 
-Finally, you move the `deps.nix` file to the appropriate location to be used by `nugetDeps`, then you're all set!
+Finally, you move the `deps.json` file to the appropriate location to be used by `nugetDeps`, then you're all set!
 
 If you ever need to update the dependencies of a package, you instead do
 
