@@ -5,7 +5,7 @@
   lib,
   substituteAll,
   nuget-to-nix,
-  nixfmt-rfc-style,
+  nuget-to-json,
   cacert,
   fetchNupkg,
   callPackage,
@@ -96,8 +96,10 @@ attrs
             src = ./fetch-deps.sh;
             isExecutable = true;
             inherit cacert;
-            nugetToNix = nuget-to-nix;
-            nixfmt = nixfmt-rfc-style;
+            binPath = lib.makeBinPath [
+              nuget-to-nix
+              nuget-to-json
+            ];
           };
 
           defaultDepsFile =
