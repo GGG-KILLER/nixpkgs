@@ -6,7 +6,6 @@
   substituteAll,
   nuget-to-nix,
   nuget-to-json,
-  jq,
   cacert,
   fetchNupkg,
   callPackage,
@@ -98,7 +97,6 @@ attrs
             binPath = lib.makeBinPath [
               nuget-to-nix
               nuget-to-json
-              jq
             ];
           };
 

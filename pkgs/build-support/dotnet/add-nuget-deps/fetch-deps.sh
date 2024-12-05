@@ -7,7 +7,7 @@ LOCKFILE_OUTPUT="$1"
 
 genericBuild
 
-nuget-to-json "${NUGET_PACKAGES%/}" | jq . >deps.json
+nuget-to-json "${NUGET_PACKAGES%/}" >deps.json
 
 if [[ "$LOCKFILE_OUTPUT" == *.nix ]]; then
     trap 'rm deps.json' exit
