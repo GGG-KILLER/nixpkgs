@@ -17,7 +17,7 @@ buildDotnetModule rec {
 
   dotnet-sdk = dotnetCorePackages.sdk_6_0;
   projectFile = "src/Kryptor.sln";
-  nugetDeps = ./deps.nix;
+  nugetDeps = ./deps.json;
 
   executables = ["kryptor"];
 

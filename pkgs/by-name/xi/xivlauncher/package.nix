@@ -22,7 +22,7 @@ in
     buildInputs = with gst_all_1; [ gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav ];
 
     projectFile = "src/XIVLauncher.Core/XIVLauncher.Core.csproj";
-    nugetDeps = ./deps.nix; # File generated with `nix-build -A xivlauncher.passthru.fetch-deps`
+    nugetDeps = ./deps.json; # File generated with `nix-build -A xivlauncher.passthru.fetch-deps`
 
     # please do not unpin these even if they match the defaults, xivlauncher is sensitive to .NET versions
     dotnet-sdk = dotnetCorePackages.sdk_8_0;

@@ -25,7 +25,7 @@ buildDotnetModule rec {
   doCheck = true;
   testProjectFile = "Tests/Tests.fsproj";
 
-  nugetDeps = ./deps.nix;
+  nugetDeps = ./deps.json;
 
   dotnet-sdk = dotnetCorePackages.sdk_8_0;
   dotnet-runtime = dotnetCorePackages.runtime_8_0;

@@ -21,7 +21,7 @@
   glue = callPackage ./glue.nix {};
 
   buildInputs = base.buildInputs ++ [
-    (mkNugetDeps { name = "deps"; nugetDeps = import ./deps.nix; })
+    (mkNugetDeps { name = "deps"; sourceFile = ./deps.json; })
   ];
 
   sconsFlags = base.sconsFlags ++ [

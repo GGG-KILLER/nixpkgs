@@ -21,7 +21,7 @@ buildDotnetModule rec {
 
   dotnet-sdk = dotnetCorePackages.sdk_6_0;
   projectFile = "UI.Console/UI.Console.csproj";
-  nugetDeps = ./deps.nix;
+  nugetDeps = ./deps.json;
 
   preConfigureNuGet = ''
     # This should really be in the upstream nuget.config
