@@ -23,7 +23,7 @@ buildDotnetModule rec {
 
   projectFile = "Lumafly/Lumafly.csproj";
 
-  nugetDeps = ./deps.nix;
+  nugetDeps = ./deps.json;
 
   dotnet-sdk = dotnetCorePackages.sdk_7_0;
 

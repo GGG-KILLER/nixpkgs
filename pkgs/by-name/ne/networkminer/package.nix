@@ -36,7 +36,7 @@ buildDotnetModule rec {
     sed -zi 's|<data name="$this.Icon".*</data>||g' NetworkMiner/UpdateCheck.resx
   '';
 
-  nugetDeps = ./deps.nix;
+  nugetDeps = ./deps.json;
 
   buildPhase = ''
     runHook preBuild

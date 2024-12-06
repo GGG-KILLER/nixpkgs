@@ -46,7 +46,7 @@ let
     dotnet-runtime = null;
 
     projectFile = "src/managed/ManagedPart.csproj";
-    nugetDeps = ./deps.nix;
+    nugetDeps = ./deps.json;
 
     # include platform-specific dbgshim binary in nugetDeps
     dotnetFlags = [ "-p:UseDbgShimDependency=true" ];
