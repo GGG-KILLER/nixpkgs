@@ -6,20 +6,20 @@
   dotnetCorePackages,
 }:
 
-buildDotnetModule rec {
+buildDotnetModule (finalAttrs: {
   pname = "knossosnet";
   version = "1.2.4";
 
   src = fetchFromGitHub {
     owner = "KnossosNET";
     repo = "Knossos.NET";
-    rev = "v${version}";
+    rev = "v${finalAttrs.version}";
     hash = "sha256-vlSiM6kskV4wfBZF7Rv5ICyqKG0Zhz/iU8kflYOaf0U=";
   };
 
-  patches = [ ./targetframework.patch ];
+  patches = [ ./dotnet-8-upgrade.patch ];
 
-  dotnet-sdk = dotnetCorePackages.sdk_6_0;
+  dotnet-sdk = dotnetCorePackages.sdk_8_0;
   nugetDeps = ./deps.json;
   executables = [ "Knossos.NET" ];
 
@@ -32,4 +32,4 @@ buildDotnetModule rec {
     mainProgram = "Knossos.NET";
     maintainers = with maintainers; [ cdombroski ];
   };
-}
+})
