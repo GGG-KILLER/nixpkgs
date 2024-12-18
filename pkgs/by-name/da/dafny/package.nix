@@ -1,20 +1,21 @@
-{ lib
-, buildDotnetModule
-, fetchFromGitHub
-, writeScript
-, jdk11
-, z3
-, dotnetCorePackages
+{
+  lib,
+  buildDotnetModule,
+  fetchFromGitHub,
+  writeScript,
+  jdk11,
+  z3,
+  dotnetCorePackages,
 }:
 
-buildDotnetModule rec {
+buildDotnetModule (finalAttrs: {
   pname = "Dafny";
   version = "4.8.0";
 
   src = fetchFromGitHub {
     owner = "dafny-lang";
     repo = "dafny";
-    rev = "v${version}";
+    rev = "v${finalAttrs.version}";
     hash = "sha256-x/fX4o+R72Pl02u1Zsr80Rh/4Wb/aKw90fhAGmsfFUI=";
   };
 
@@ -24,12 +25,11 @@ buildDotnetModule rec {
       runtimeJarVersion = "4.6.0";
     in
     ''
-      cp ${
-        writeScript "fake-gradlew-for-dafny" ''
-          mkdir -p build/libs/
-          javac $(find -name "*.java" | grep "^./src/main") -d classes
-          jar cf build/libs/DafnyRuntime-${runtimeJarVersion}.jar -C classes dafny
-        ''} Source/DafnyRuntime/DafnyRuntimeJava/gradlew
+      cp ${writeScript "fake-gradlew-for-dafny" ''
+        mkdir -p build/libs/
+        javac $(find -name "*.java" | grep "^./src/main") -d classes
+        jar cf build/libs/DafnyRuntime-${runtimeJarVersion}.jar -C classes dafny
+      ''} Source/DafnyRuntime/DafnyRuntimeJava/gradlew
 
       # Needed to fix
       # "error NETSDK1129: The 'Publish' target is not supported without
@@ -37,11 +37,18 @@ buildDotnetModule rec {
       # frameworks, you must specify the framework for the published
       # application."
       substituteInPlace Source/DafnyRuntime/DafnyRuntime.csproj \
-        --replace-warn TargetFrameworks TargetFramework \
-        --replace-warn "netstandard2.0;net452" net6.0
+        --replace-fail TargetFrameworks TargetFramework \
+        --replace-fail "netstandard2.0;net452" net8.0
+
+      for f in Source/**/*.csproj ; do
+        [[ "$f" == "Source/DafnyRuntime/DafnyRuntime.csproj" ]] && continue;
+
+        substituteInPlace $f \
+          --replace-fail net6.0 net8.0
+      done
     '';
 
-  dotnet-sdk = dotnetCorePackages.sdk_6_0;
+  dotnet-sdk = dotnetCorePackages.sdk_8_0;
   nativeBuildInputs = [ jdk11 ];
   nugetDeps = ./deps.json;
 
@@ -69,4 +76,4 @@ buildDotnetModule rec {
     license = licenses.mit;
     platforms = with platforms; (linux ++ darwin);
   };
-}
+})
