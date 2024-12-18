@@ -10,13 +10,13 @@
 }:
 buildDotnetModule (finalAttrs: {
   pname = "ilspycmd";
-  version = "8.0";
+  version = "9.0-preview3";
 
   src = fetchFromGitHub {
     owner = "icsharpcode";
     repo = "ILSpy";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-ERBYXgpBRXISfqBSBEydEQuD/5T1dvJ+wNg2U5pKip4=";
+    hash = "sha256-7cPXFaEKr76GtqcNsKx7tstRUeTpSTF8ggxbyEnQa9M=";
   };
 
   nativeBuildInputs =
@@ -32,7 +32,6 @@ buildDotnetModule (finalAttrs: {
   env.LOCALE_ARCHIVE = lib.optionalString stdenv.hostPlatform.isLinux "${glibcLocales}/lib/locale/locale-archive";
 
   dotnet-sdk = dotnetCorePackages.sdk_8_0;
-  dotnet-runtime = dotnetCorePackages.runtime_8_0;
 
   projectFile = "ICSharpCode.ILSpyCmd/ICSharpCode.ILSpyCmd.csproj";
   nugetDeps = ./deps.nix;
