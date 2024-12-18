@@ -1,0 +1,12 @@
+diff --git a/OpenTracker/OpenTracker.csproj b/OpenTracker/OpenTracker.csproj
+index 7bf84b80..05cb59bd 100644
+--- a/OpenTracker/OpenTracker.csproj
++++ b/OpenTracker/OpenTracker.csproj
+@@ -10,7 +10,6 @@
+     <FileVersion>1.8.5</FileVersion>
+     <CFBundleShortVersionString>1.8.5</CFBundleShortVersionString>
+     <Nullable>enable</Nullable>
+-    <RuntimeIdentifiers>osx-x64;linux-x64;debian-x64;rhel-x64;win-x64;win-x86;win7-x64;win7-x86</RuntimeIdentifiers>
+     <LangVersion>default</LangVersion>
+   </PropertyGroup>
+   <ItemGroup>
