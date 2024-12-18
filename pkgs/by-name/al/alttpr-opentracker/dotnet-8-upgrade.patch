@@ -1,0 +1,65 @@
+diff --git a/Avalonia.ThemeManager/Avalonia.ThemeManager.csproj b/Avalonia.ThemeManager/Avalonia.ThemeManager.csproj
+index 3c638a20..9ee99089 100644
+--- a/Avalonia.ThemeManager/Avalonia.ThemeManager.csproj
++++ b/Avalonia.ThemeManager/Avalonia.ThemeManager.csproj
+@@ -1,7 +1,7 @@
+ ﻿<Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <TargetFramework>netcoreapp3.1</TargetFramework>
++    <TargetFramework>net8.0</TargetFramework>
+     <Nullable>enable</Nullable>
+   </PropertyGroup>
+ 
+diff --git a/OpenTracker.Models/OpenTracker.Models.csproj b/OpenTracker.Models/OpenTracker.Models.csproj
+index daa709a6..80465821 100644
+--- a/OpenTracker.Models/OpenTracker.Models.csproj
++++ b/OpenTracker.Models/OpenTracker.Models.csproj
+@@ -1,7 +1,7 @@
+ ﻿<Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <TargetFramework>net6.0</TargetFramework>
++    <TargetFramework>net8.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <Version>1.8.5</Version>
+     <LangVersion>default</LangVersion>
+diff --git a/OpenTracker.UnitTests/OpenTracker.UnitTests.csproj b/OpenTracker.UnitTests/OpenTracker.UnitTests.csproj
+index a3ba681d..82260329 100644
+--- a/OpenTracker.UnitTests/OpenTracker.UnitTests.csproj
++++ b/OpenTracker.UnitTests/OpenTracker.UnitTests.csproj
+@@ -1,7 +1,7 @@
+ ﻿<Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <TargetFramework>net6.0</TargetFramework>
++    <TargetFramework>net8.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <LangVersion>default</LangVersion>
+   </PropertyGroup>
+diff --git a/OpenTracker.Utils/OpenTracker.Utils.csproj b/OpenTracker.Utils/OpenTracker.Utils.csproj
+index 85a65ea7..69d9d799 100644
+--- a/OpenTracker.Utils/OpenTracker.Utils.csproj
++++ b/OpenTracker.Utils/OpenTracker.Utils.csproj
+@@ -1,7 +1,7 @@
+ <Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <TargetFramework>net6.0</TargetFramework>
++    <TargetFramework>net8.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <Version>1.8.5</Version>
+     <LangVersion>default</LangVersion>
+diff --git a/OpenTracker/OpenTracker.csproj b/OpenTracker/OpenTracker.csproj
+index 75bb5015..7bf84b80 100644
+--- a/OpenTracker/OpenTracker.csproj
++++ b/OpenTracker/OpenTracker.csproj
+@@ -1,7 +1,7 @@
+ ﻿<Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+     <OutputType>WinExe</OutputType>
+-    <TargetFramework>net6.0</TargetFramework>
++    <TargetFramework>net8.0</TargetFramework>
+     <ApplicationIcon>triforce.ico</ApplicationIcon>
+     <Win32Resource />
+     <Version>1.8.5</Version>

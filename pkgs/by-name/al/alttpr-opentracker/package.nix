@@ -15,25 +15,30 @@
   xinput,
   xorg,
 }:
-buildDotnetModule rec {
+buildDotnetModule (finalAttrs: {
   pname = "opentracker";
   version = "1.8.5";
 
   src = fetchFromGitHub {
     owner = "trippsc2";
-    repo = pname;
-    rev = "refs/tags/${version}";
+    repo = "opentracker";
+    rev = "refs/tags/${finalAttrs.version}";
     hash = "sha512-nWkPgVYdnBJibyJRdLPe3O3RioDPbzumSritRejmr4CeiPb7aUTON7HjivcV/GKor1guEYu+TJ+QxYrqO/eppg==";
   };
 
-  patches = [./remove-project.patch];
+  patches = [
+    ./dotnet-8-upgrade.patch
+    ./remove-rids.patch
+  ];
 
-  dotnet-sdk = dotnetCorePackages.sdk_6_0;
+  dotnet-sdk = dotnetCorePackages.sdk_8_0;
+  dotnet-runtime = dotnetCorePackages.runtime_8_0;
 
   nugetDeps = ./deps.json;
 
-  projectFile = "OpenTracker.sln";
-  executables = ["OpenTracker"];
+  projectFile = "OpenTracker/OpenTracker.csproj";
+  testProjectFile = "OpenTracker.UnitTests/OpenTracker.UnitTests.csproj";
+  executables = [ "OpenTracker" ];
 
   doCheck = true;
   disabledTests = [
@@ -86,6 +91,6 @@ buildDotnetModule rec {
     license = licenses.mit;
     maintainers = [ ];
     mainProgram = "OpenTracker";
-    platforms = ["x86_64-linux"];
+    platforms = [ "x86_64-linux" ];
   };
-}
+})
