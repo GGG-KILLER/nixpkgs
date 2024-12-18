@@ -509,11 +509,6 @@
     hash = "sha256-UvyoDV8O0oY3HPG1GbA56YVdvwTGEfjYR5gW1O7IK4U=";
   })
   (fetchNuGet {
-    pname = "System.Runtime.CompilerServices.Unsafe";
-    version = "6.0.0";
-    hash = "sha256-bEG1PnDp7uKYz/OgLOWs3RWwQSVYm+AnPwVmAmcgp2I=";
-  })
-  (fetchNuGet {
     pname = "System.Runtime.Extensions";
     version = "4.3.0";
     hash = "sha256-wLDHmozr84v1W2zYCWYxxj0FR0JDYHSVRaRuDm0bd/o=";
