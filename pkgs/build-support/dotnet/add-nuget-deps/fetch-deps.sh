@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-set -euo pipefail
+set -eo pipefail
 
 export PATH="@binPath@:$PATH"
 
