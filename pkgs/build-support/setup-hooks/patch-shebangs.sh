@@ -118,7 +118,7 @@ patchShebangs() {
         newInterpreterLine="$newPath $args"
         newInterpreterLine=${newInterpreterLine%${newInterpreterLine##*[![:space:]]}}
 
-        if [[ -n "$oldPath" && ( "$update" == true || "${oldPath:0:${#NIX_STORE}}" != "$NIX_STORE" ) ]]; then
+        if [[ -n "$oldPath" && ( "${update:-}" == true || "${oldPath:0:${#NIX_STORE}}" != "$NIX_STORE" ) ]]; then
             if [[ -n "$newPath" && "$newPath" != "$oldPath" ]]; then
                 echo "$f: interpreter directive changed from \"$oldInterpreterLine\" to \"$newInterpreterLine\""
                 # escape the escape chars so that sed doesn't interpret them
