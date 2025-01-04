@@ -37,7 +37,7 @@ getvar() {
 }
 
 attr="${UPDATE_NIX_ATTR_PATH:-curl-impersonate-chrome}"
-version="$(curl -sSL "https://api.github.com/repos/yifeikong/curl-impersonate/releases/latest" | jq -r .tag_name | sed -e 's/^v//')"
+version="$(curl -sSL "https://api.github.com/repos/lexiforest/curl-impersonate/releases/latest" | jq -r .tag_name | sed -e 's/^v//')"
 
 pkgpath="$(findpath "$attr")"
 
@@ -48,7 +48,7 @@ if [ "$updated" -eq 0 ]; then
     exit 0
 fi
 
-vars="$(curl -sSL "https://github.com/yifeikong/curl-impersonate/raw/v$version/Makefile.in" | grep '^ *[^ ]*_\(VERSION\|URL\|COMMIT\) *:=')"
+vars="$(curl -sSL "https://github.com/lexiforest/curl-impersonate/raw/v$version/Makefile.in" | grep '^ *[^ ]*_\(VERSION\|URL\|COMMIT\) *:=')"
 
 # TODO: Fix hash for curl.
 cat >"$(dirname "$pkgpath")"/deps.nix <<EOF
