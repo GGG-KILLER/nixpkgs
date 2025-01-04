@@ -24,7 +24,7 @@
 }:
 stdenv.mkDerivation rec {
   pname = "curl-impersonate-chrome";
-  version = "0.8.0";
+  version = "0.8.2";
 
   outputs = [
     "out"
@@ -35,7 +35,7 @@ stdenv.mkDerivation rec {
     owner = "lexiforest";
     repo = "curl-impersonate";
     rev = "v${version}";
-    hash = "sha256-m6zeQUL+yBh3ixS+crbJWHX5TLa61A/3oqMz5UVELso=";
+    hash = "sha256-01SyMuKC5WcxqMTZk9pOvMDB3vjFfedbz1NxjuJh+nI=";
   };
 
   patches = [ ./disable-building-docs.patch ];
@@ -180,11 +180,14 @@ stdenv.mkDerivation rec {
     updateScript = ./update.sh;
 
     boringssl-go-modules =
-      (buildGoModule {
-        inherit (passthru.deps."boringssl.zip") name;
+      (let
+        boringssl-name = lib.head (lib.filter (name: (lib.match "boringssl-[[:xdigit:]]+.zip" name) == [ ]) (lib.attrNames passthru.deps));
+        boringssl-src = passthru.deps.${boringssl-name};
+      in buildGoModule {
+        inherit (boringssl-src) name;
 
-        src = passthru.deps."boringssl.zip";
-        vendorHash = "sha256-oKlwh+Oup3lVgqgq42vY3iLg62VboF9N565yK2W0XxI=";
+        src = boringssl-src;
+        vendorHash = "sha256-GlhLsPD+yp2LdqsIsfXNEaNKKlc76p0kBCyu4rlEmMg=";
 
         nativeBuildInputs = [ unzip ];
 

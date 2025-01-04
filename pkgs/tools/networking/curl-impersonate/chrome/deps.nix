@@ -12,9 +12,9 @@
     hash = "sha256-5yCmyilCi4A/StFlNxdx9TmPq6OX7fZ3iDehhZnqE/8=";
   };
 
-  "boringssl.zip" = fetchurl {
-    url = "https://github.com/google/boringssl/archive/d24a38200fef19150eef00cad35b138936c08767.zip";
-    hash = "sha256-tzAAwL70VAyUEOZZ86ql+RgXsw4DZhkvW5l0d1eVVHU=";
+  "boringssl-cd95210465496ac2337b313cf49f607762abe286.zip" = fetchurl {
+    url = "https://github.com/google/boringssl/archive/cd95210465496ac2337b313cf49f607762abe286.zip";
+    hash = "sha256-D40cQAhqz8jlP95T+kZFIAf/K9Pi5Ig268+eNCoAKl0=";
   };
 
   "nghttp2-1.63.0.tar.bz2" = fetchurl {
