@@ -9,21 +9,22 @@
   ngtcp2,
   curl,
   installShellFiles,
+  runCommand,
 }:
 let
-  version = "1.0.0rc2";
+  version = "1.0.0";
   curl-impersonate-src = fetchFromGitHub {
     owner = "lexiforest";
     repo = "curl-impersonate";
     tag = "v${version}";
-    hash = "sha256-YmxFJAEhpSRCG4UDZbfMQm5r4RbOkhzIVh8/nmvWl54=";
+    hash = "sha256-XbXd1Lf7bnI5vpESMK44ScOJYS4fEQq22lJ2rmy/koI=";
 
     postFetch = ''
       # Fix patch to not refer to the dev version.
       substituteInPlace "$out"/patches/curl.patch --replace-fail 8.13.0-DEV 8.13.0
 
       # Remove lines related to scripts/singleuse.pl
-      sed -i -E '4029,4040d' "$out"/patches/curl.patch
+      sed -i -E '4329,4340d' "$out"/patches/curl.patch
     '';
   };
 
@@ -68,29 +69,31 @@ let
       "${curl-impersonate-src}/patches/boringssl.patch"
     ];
 
-    # Required for curl to build, since it searches for OpenSSL stuff in the same dir as the includes.
-    postInstall = ''
-      mv "$out"/lib "$dev"/lib
-      cp $src/* "$dev"/.
-    '';
-
     cmakeFlags = old.cmakeFlags or [ ] ++ commonCmakeFlags;
   });
+
+  # Required for curl to build
+  # See: https://everything.curl.dev/build/boringssl.html
+  boringssl-wrapper = runCommand "boringssl-wrapper" { } ''
+    mkdir $out
+    ln -s ${patched-boringssl.out}/lib $out/lib
+    ln -s ${patched-boringssl.dev}/include $out/include
+  '';
 
   # Replace SSL library with BoringSSL as well as brotli and nghttp3.
   # Also set correct cmake flags (unsure if needed).
   patched-ngtcp2 =
     (ngtcp2.override {
-      quictls = patched-boringssl;
+      quictls = boringssl-wrapper;
     }).overrideAttrs
       (old: {
         cmakeFlags = old.cmakeFlags ++ [
           (lib.cmakeBool "ENABLE_LIB_ONLY" true)
           (lib.cmakeBool "ENABLE_OPENSSL" false)
           (lib.cmakeBool "ENABLE_BORINGSSL" true)
-          "-DCMAKE_LIBRARY_PATH=${lib.getBin patched-boringssl}/lib"
+          "-DCMAKE_LIBRARY_PATH=${lib.getBin boringssl-wrapper}/lib"
           "-DBORINGSSL_LIBRARIES=ssl;crypto;pthread"
-          "-DBORINGSSL_INCLUDE_DIR=${lib.getDev patched-boringssl}/include"
+          "-DBORINGSSL_INCLUDE_DIR=${lib.getDev boringssl-wrapper}/include"
         ];
       });
 
@@ -107,8 +110,8 @@ let
 
       # Technically, these aren't used, but they're kept here in case that changes in the future.
       ngtcp2 = patched-ngtcp2;
-      openssl = patched-boringssl;
-      quictls = patched-boringssl;
+      openssl = boringssl-wrapper;
+      quictls = boringssl-wrapper;
       curl = curl-impersonate;
     }).overrideAttrs
       (old: {
@@ -129,10 +132,10 @@ let
       nghttp2 = patched-nghttp2;
       http3Support = true;
       ngtcp2 = patched-ngtcp2;
-      quictls = patched-boringssl;
+      quictls = boringssl-wrapper;
       websocketSupport = true;
       opensslSupport = true;
-      openssl = patched-boringssl;
+      openssl = boringssl-wrapper;
       zlibSupport = true;
       zstdSupport = true;
       scpSupport = false;
@@ -158,6 +161,7 @@ let
         ];
 
         configureFlags = old.configureFlags or [ ] ++ [
+          "LIBS=-lstdc++"
           "--with-nghttp2=${lib.getDev patched-nghttp2}"
           "--enable-ech"
           "--enable-ipv6"
@@ -194,7 +198,7 @@ let
           '';
 
         passthru = {
-          boringssl = patched-boringssl;
+          boringssl = boringssl-wrapper;
           tests = {
             # Don't inherit other tests since they use curl, not curl-impersonate.
             withCheck = old.passthru.withCheck;
