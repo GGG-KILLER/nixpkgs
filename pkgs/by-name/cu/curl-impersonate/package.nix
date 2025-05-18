@@ -17,15 +17,7 @@ let
     owner = "lexiforest";
     repo = "curl-impersonate";
     tag = "v${version}";
-    hash = "sha256-XbXd1Lf7bnI5vpESMK44ScOJYS4fEQq22lJ2rmy/koI=";
-
-    postFetch = ''
-      # Fix patch to not refer to the dev version.
-      substituteInPlace "$out"/patches/curl.patch --replace-fail 8.13.0-DEV 8.13.0
-
-      # Remove lines related to scripts/singleuse.pl
-      sed -i -E '4329,4340d' "$out"/patches/curl.patch
-    '';
+    hash = "sha256-sw/qn7c1ZFCQNRK9XUxttf1KjXK8fEB9Owcj99K1ihg=";
   };
 
   boringssl-commit = "673e61fc215b178a90c0e67858bbf162c8158993"; # BORING_SSL_COMMIT in Makefile.in
@@ -153,12 +145,19 @@ let
             }/curl-${curl-version}.tar.xz"
           ];
           hash = curl-hash;
+
         };
+
+        outputs = [
+          "bin"
+          "dev"
+          "out"
+        ];
 
         nativeBuildInputs = old.nativeBuildInputs ++ [ installShellFiles ];
 
         patches = old.patches or [ ] ++ [
-          "${curl-impersonate-src}/patches/curl.patch"
+          ./curl.patch
         ];
 
         configureFlags = old.configureFlags or [ ] ++ [
@@ -171,7 +170,7 @@ let
           "--disable-docs"
         ];
 
-        postInstall =
+        /*postInstall =
           old.postInstall or ""
           + ''
             # Rename curl binary and install other scripts
@@ -198,7 +197,7 @@ let
 
             # Install zsh and fish completions
             installShellCompletion curl-impersonate.{zsh,fish}
-          '';
+          '';*/
 
         passthru = {
           boringssl = boringssl-wrapper;
