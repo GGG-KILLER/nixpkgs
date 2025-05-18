@@ -88,6 +88,7 @@ let
     }).overrideAttrs
       (old: {
         cmakeFlags = old.cmakeFlags ++ [
+          (lib.cmakeBool "ENABLE_STATIC_LIB" true)
           (lib.cmakeBool "ENABLE_LIB_ONLY" true)
           (lib.cmakeBool "ENABLE_OPENSSL" false)
           (lib.cmakeBool "ENABLE_BORINGSSL" true)
@@ -162,10 +163,12 @@ let
 
         configureFlags = old.configureFlags or [ ] ++ [
           "LIBS=-lstdc++"
+          "--with-ngtcp2=${lib.getDev patched-ngtcp2}"
           "--with-nghttp2=${lib.getDev patched-nghttp2}"
           "--enable-ech"
           "--enable-ipv6"
           "USE_CURL_SSLKEYLOGFILE=true"
+          "--disable-docs"
         ];
 
         postInstall =
