@@ -9,22 +9,15 @@
   ngtcp2,
   curl,
   installShellFiles,
+  runCommand,
 }:
 let
-  version = "1.0.0rc2";
+  version = "1.0.0";
   curl-impersonate-src = fetchFromGitHub {
     owner = "lexiforest";
     repo = "curl-impersonate";
     tag = "v${version}";
-    hash = "sha256-YmxFJAEhpSRCG4UDZbfMQm5r4RbOkhzIVh8/nmvWl54=";
-
-    postFetch = ''
-      # Fix patch to not refer to the dev version.
-      substituteInPlace "$out"/patches/curl.patch --replace-fail 8.13.0-DEV 8.13.0
-
-      # Remove lines related to scripts/singleuse.pl
-      sed -i -E '4029,4040d' "$out"/patches/curl.patch
-    '';
+    hash = "sha256-sw/qn7c1ZFCQNRK9XUxttf1KjXK8fEB9Owcj99K1ihg=";
   };
 
   boringssl-commit = "673e61fc215b178a90c0e67858bbf162c8158993"; # BORING_SSL_COMMIT in Makefile.in
@@ -68,29 +61,32 @@ let
       "${curl-impersonate-src}/patches/boringssl.patch"
     ];
 
-    # Required for curl to build, since it searches for OpenSSL stuff in the same dir as the includes.
-    postInstall = ''
-      mv "$out"/lib "$dev"/lib
-      cp $src/* "$dev"/.
-    '';
-
     cmakeFlags = old.cmakeFlags or [ ] ++ commonCmakeFlags;
   });
+
+  # Required for curl to build
+  # See: https://everything.curl.dev/build/boringssl.html
+  boringssl-wrapper = runCommand "boringssl-wrapper" { } ''
+    mkdir $out
+    ln -s ${patched-boringssl.out}/lib $out/lib
+    ln -s ${patched-boringssl.dev}/include $out/include
+  '';
 
   # Replace SSL library with BoringSSL as well as brotli and nghttp3.
   # Also set correct cmake flags (unsure if needed).
   patched-ngtcp2 =
     (ngtcp2.override {
-      quictls = patched-boringssl;
+      quictls = boringssl-wrapper;
     }).overrideAttrs
       (old: {
         cmakeFlags = old.cmakeFlags ++ [
+          (lib.cmakeBool "ENABLE_STATIC_LIB" true)
           (lib.cmakeBool "ENABLE_LIB_ONLY" true)
           (lib.cmakeBool "ENABLE_OPENSSL" false)
           (lib.cmakeBool "ENABLE_BORINGSSL" true)
-          "-DCMAKE_LIBRARY_PATH=${lib.getBin patched-boringssl}/lib"
+          "-DCMAKE_LIBRARY_PATH=${lib.getBin boringssl-wrapper}/lib"
           "-DBORINGSSL_LIBRARIES=ssl;crypto;pthread"
-          "-DBORINGSSL_INCLUDE_DIR=${lib.getDev patched-boringssl}/include"
+          "-DBORINGSSL_INCLUDE_DIR=${lib.getDev boringssl-wrapper}/include"
         ];
       });
 
@@ -107,8 +103,8 @@ let
 
       # Technically, these aren't used, but they're kept here in case that changes in the future.
       ngtcp2 = patched-ngtcp2;
-      openssl = patched-boringssl;
-      quictls = patched-boringssl;
+      openssl = boringssl-wrapper;
+      quictls = boringssl-wrapper;
       curl = curl-impersonate;
     }).overrideAttrs
       (old: {
@@ -129,10 +125,10 @@ let
       nghttp2 = patched-nghttp2;
       http3Support = true;
       ngtcp2 = patched-ngtcp2;
-      quictls = patched-boringssl;
+      quictls = boringssl-wrapper;
       websocketSupport = true;
       opensslSupport = true;
-      openssl = patched-boringssl;
+      openssl = boringssl-wrapper;
       zlibSupport = true;
       zstdSupport = true;
       scpSupport = false;
@@ -149,22 +145,32 @@ let
             }/curl-${curl-version}.tar.xz"
           ];
           hash = curl-hash;
+
         };
+
+        outputs = [
+          "bin"
+          "dev"
+          "out"
+        ];
 
         nativeBuildInputs = old.nativeBuildInputs ++ [ installShellFiles ];
 
         patches = old.patches or [ ] ++ [
-          "${curl-impersonate-src}/patches/curl.patch"
+          ./curl.patch
         ];
 
         configureFlags = old.configureFlags or [ ] ++ [
+          "LIBS=-lstdc++"
+          "--with-ngtcp2=${lib.getDev patched-ngtcp2}"
           "--with-nghttp2=${lib.getDev patched-nghttp2}"
           "--enable-ech"
           "--enable-ipv6"
           "USE_CURL_SSLKEYLOGFILE=true"
+          "--disable-docs"
         ];
 
-        postInstall =
+        /*postInstall =
           old.postInstall or ""
           + ''
             # Rename curl binary and install other scripts
@@ -191,10 +197,10 @@ let
 
             # Install zsh and fish completions
             installShellCompletion curl-impersonate.{zsh,fish}
-          '';
+          '';*/
 
         passthru = {
-          boringssl = patched-boringssl;
+          boringssl = boringssl-wrapper;
           tests = {
             # Don't inherit other tests since they use curl, not curl-impersonate.
             withCheck = old.passthru.withCheck;
